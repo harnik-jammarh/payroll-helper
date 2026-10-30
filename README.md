@@ -17,7 +17,8 @@ Once a stable GitHub release has been published, use:
 curl -fsSL https://raw.githubusercontent.com/harnik-jammarh/payroll-helper/main/install.sh | bash
 ```
 
-The same command installs newer releases over existing versions. It requires
+The same command installs newer releases over existing versions. Release selection
+uses small channel files hosted in this repository, avoiding GitHub API rate limits. It requires
 administrator access, installs Python/Tk dependencies through apt, and configures
 system-wide companion policies. It does not install browsers themselves.
 The checksum file detects download corruption; it is hosted with the release and

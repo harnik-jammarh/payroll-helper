@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python3 tests/desktop.py && node tests/companion.cjs && python3 tests/packaging.py
+      - run: python3 tests/desktop.py && node tests/companion.cjs && python3 tests/packaging.py && python3 tests/installer.py
       - name: Prepare persistent Chromium signing key
         env:
           SIGNING_KEY: ${{ secrets.CRX_PRIVATE_KEY }}
@@ -47,3 +47,19 @@ jobs:
           flags=()
           if [ "$REQUIRE_ALL" != true ]; then flags+=(--prerelease); fi
           gh release create "v$VERSION" dist/* --target "$GITHUB_SHA" --title "Payroll Helper $VERSION" --generate-notes "${flags[@]}"
+      - name: Update installer channel
+        env:
+          VERSION: ${{ inputs.version }}
+          REQUIRE_ALL: ${{ inputs.require_all_companions }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          git checkout -B channel-update origin/main
+          channel=preview
+          if [ "$REQUIRE_ALL" = true ]; then channel=stable; fi
+          mkdir -p channels
+          printf '{"version": "%s"}\n' "$VERSION" > "channels/$channel.json"
+          git add "channels/$channel.json"
+          git diff --cached --quiet || git commit -m "Update $channel installer channel to $VERSION"
+          git push origin HEAD:main

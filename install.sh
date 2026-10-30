@@ -17,26 +17,30 @@ python3 - "$REPOSITORY" "$stage" "$mode" <<'PY'
 import hashlib,json,re,sys,urllib.request,urllib.error
 from pathlib import Path
 repo,directory,mode=sys.argv[1:];directory=Path(directory)
-headers={'Accept':'application/vnd.github+json','User-Agent':'payroll-helper-installer'}
-endpoint='/releases' if mode=='preview' else '/releases/latest'
-request=urllib.request.Request('https://api.github.com/repos/'+repo+endpoint,headers=headers)
-try:
-    with urllib.request.urlopen(request,timeout=60) as r:release=json.load(r)
-except urllib.error.HTTPError as e:
-    if e.code==404:raise SystemExit('No stable release yet. Use --preview to test a prerelease; Firefox automatic setup may be pending.')
-    raise
-if mode=='preview':
-    release=next((item for item in release if not item['draft']),None)
-    if release is None:raise SystemExit('No published release available yet')
-assets={a['name']:a['browser_download_url'] for a in release['assets']}
-names=[n for n in assets if re.fullmatch(r'odoo-payroll-helper_\d+\.\d+\.\d+_all\.deb',n)]
-if len(names)!=1:raise SystemExit('Release must contain exactly one payroll .deb')
-for name in [names[0],'SHA256SUMS']:
-    with urllib.request.urlopen(assets[name],timeout=120) as r:(directory/name).write_bytes(r.read())
+def download(url):
+    try:
+        request=urllib.request.Request(url,headers={'User-Agent':'payroll-helper-installer'})
+        with urllib.request.urlopen(request,timeout=120) as response:return response.read()
+    except urllib.error.HTTPError as error:
+        raise SystemExit('Download failed (HTTP '+str(error.code)+'). Please retry or download the .deb from GitHub Releases.')
+    except urllib.error.URLError as error:
+        raise SystemExit('Download failed: '+str(error.reason))
+channel_url='https://raw.githubusercontent.com/'+repo+'/main/channels/'+mode+'.json'
+channel=json.loads(download(channel_url))
+version=channel.get('version')
+if version is None:
+    raise SystemExit('No stable release yet. Install the current preview with:\n'
+        'curl -fsSL https://raw.githubusercontent.com/'+repo+'/main/install.sh | bash -s -- --preview')
+if not isinstance(version,str) or not re.fullmatch(r'\d+\.\d+\.\d+',version):raise SystemExit('Invalid release channel version')
+name='odoo-payroll-helper_'+version+'_all.deb'
+base='https://github.com/'+repo+'/releases/download/v'+version+'/'
+for filename in [name,'SHA256SUMS']:
+    (directory/filename).write_bytes(download(base+filename))
+names=[name]
 checks={line.split()[1]:line.split()[0] for line in (directory/'SHA256SUMS').read_text().splitlines()}
 if hashlib.sha256((directory/names[0]).read_bytes()).hexdigest()!=checks.get(names[0]):raise SystemExit('Checksum mismatch; nothing installed')
 (directory/'package-name').write_text(names[0])
-print('Downloaded release',release['tag_name'])
+print('Downloaded release v'+version)
 PY
 package=$(cat "$stage/package-name")
 chmod 755 "$stage"
