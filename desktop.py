@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-import os, json, secrets, subprocess, shutil, threading, tempfile, fcntl
+import os, json, secrets, subprocess, shutil, threading, tempfile, fcntl, sys
 from pathlib import Path
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlsplit
@@ -128,4 +128,32 @@ def main():
         tk.Button(root,text='Stop application',command=stop).pack(pady=(5,20));root.protocol('WM_DELETE_WINDOW',root.iconify)
     tk.Button(root,text='Open Payroll Helper',command=launch).pack(padx=30,pady=20)
     root.mainloop()
-if __name__=='__main__': main()
+def check_installation():
+    from urllib.request import urlopen
+    version=json.loads((ASSETS/'manifest.json').read_text()).get('version','unknown')
+    print('Payroll Helper '+version)
+    if 'window.payrollDesktop' not in (ASSETS/'desktop-bridge.js').read_text():
+        raise SystemExit('FAIL: old browser storage adapter; update the app.')
+    directory=Path.home()/'.local/share/odoo-payroll-helper'
+    data_file=directory/'payroll.json'
+    if data_file.exists():
+        data=json.loads(data_file.read_text())
+        if not isinstance(data.get('payroll'),dict):raise SystemExit('FAIL: invalid payroll data structure')
+    print('PASS: installed adapter and saved data')
+    session_file=directory/'session.json'
+    if not session_file.exists():raise SystemExit('Start odoo-payroll-helper, then run --check again.')
+    url=json.loads(session_file.read_text())['url']
+    parsed=urlsplit(url)
+    if parsed.scheme!='http' or parsed.hostname!='127.0.0.1':raise SystemExit('FAIL: invalid local session URL')
+    try:
+        with urlopen(url,timeout=5) as response:
+            if response.status!=200:raise ValueError('Unexpected response')
+    except Exception:
+        raise SystemExit('FAIL: local service is stopped. Start odoo-payroll-helper again.')
+    print('PASS: running local service')
+    print('In the payroll browser tab, select logged-in-tab mode and click Connect.')
+
+if __name__=='__main__':
+    if sys.argv[1:]==['--check']:check_installation()
+    elif sys.argv[1:]:raise SystemExit('Usage: odoo-payroll-helper [--check]')
+    else:main()
