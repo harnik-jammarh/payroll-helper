@@ -1,4 +1,5 @@
-// Odoo Payroll Helper - data stays in chrome.storage.local; Odoo is reached through a logged-in Odoo tab.
+// Desktop platform owns storage and transport. Never replace browser-owned globals.
+const payrollPlatform = window.payrollDesktop;
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const CUR = () => (S && S.cache && S.cache.currency) || { symbol: '', name: '', position: 'before', decimals: 2 };
@@ -25,22 +26,22 @@ const DEFAULT_STRUCTURE = {
 let S = { employees: [], structures: [DEFAULT_STRUCTURE], settings: { url: '', journal: '', autoPost: '0', accounts: {} }, cache: { accounts: [], journals: [] } };
 let lastRun = null;
 
-const load = async () => { const d = await chrome.storage.local.get('payroll'); if (d.payroll) S = { ...S, ...d.payroll }; };
-const save = () => chrome.storage.local.set({ payroll: S });
+const load = async () => { const d = await payrollPlatform.storage.local.get('payroll'); if (d.payroll) S = { ...S, ...d.payroll }; };
+const save = () => payrollPlatform.storage.local.set({ payroll: S });
 
 // ---------- Odoo bridge ----------
 async function odooTab() {
   const url = (S.settings.url || '').replace(/\/+$/, '');
   if (!url) throw new Error('Set the Odoo URL in Settings first.');
   const origin = new URL(url).origin;
-  if (!origin.endsWith('.odoo.com') && !(await chrome.permissions.contains({ origins: [origin + '/*'] }))) throw new Error('Click Connect in 1. Odoo connection to allow access to ' + origin + '.');
-  const tabs = await chrome.tabs.query({ url: origin + '/*' });
+  if (!origin.endsWith('.odoo.com') && !(await payrollPlatform.permissions.contains({ origins: [origin + '/*'] }))) throw new Error('Click Connect in 1. Odoo connection to allow access to ' + origin + '.');
+  const tabs = await payrollPlatform.tabs.query({ url: origin + '/*' });
   if (!tabs.length) throw new Error('Open and log in to ' + origin + ' in another tab, then try again.');
   return tabs[0].id;
 }
 async function odooViaTab(model, method, args = [], kwargs = {}) {
   const tabId = await odooTab();
-  const [res] = await chrome.scripting.executeScript({
+  const [res] = await payrollPlatform.scripting.executeScript({
     target: { tabId }, world: 'MAIN',
     func: async (model, method, args, kwargs) => {
       const r = await fetch('/web/dataset/call_kw', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { model, method, args, kwargs } }) }).then(r => r.json());
@@ -60,7 +61,7 @@ async function apiBase() {
   const url = (S.settings.url || '').replace(/\/+$/, '');
   if (!url || !S.settings.key) throw new Error('Fill the Odoo URL and API key in 1. Odoo connection.');
   const origin = new URL(url).origin;
-  if (!origin.endsWith('.odoo.com') && !(await chrome.permissions.contains({ origins: [origin + '/*'] }))) throw new Error('Click Connect in 1. Odoo connection to allow access to ' + origin + '.');
+  if (!origin.endsWith('.odoo.com') && !(await payrollPlatform.permissions.contains({ origins: [origin + '/*'] }))) throw new Error('Click Connect in 1. Odoo connection to allow access to ' + origin + '.');
   return url;
 }
 async function odooJson2(model, method, args, kwargs) {
@@ -73,7 +74,7 @@ async function odooJson2(model, method, args, kwargs) {
     if (method === 'create' && !Array.isArray(v)) { v = [v]; single = true; }
     body[n] = v;
   });
-  const r = await fetch(`${url}/json/2/${model}/${method}`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', 'Authorization': 'bearer ' + S.settings.key, ...(S.settings.db ? { 'X-Odoo-Database': S.settings.db } : {}) }, body: JSON.stringify(body) });
+  const r = await payrollPlatform.request(`${url}/json/2/${model}/${method}`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json', 'Authorization': 'bearer ' + S.settings.key, ...(S.settings.db ? { 'X-Odoo-Database': S.settings.db } : {}) }, body: JSON.stringify(body) });
   if (r.status === 404 && !(await r.clone().text()).includes('"name"')) throw Object.assign(new Error('json2-missing'), { fallback: true });
   const data = await r.json().catch(() => null);
   if (!r.ok) throw new Error((data && (data.message || (data.error && data.error.message))) || `Odoo API error ${r.status}`);
@@ -82,7 +83,7 @@ async function odooJson2(model, method, args, kwargs) {
 async function odooJsonRpc(model, method, args, kwargs) {
   const url = await apiBase();
   const call = async (service, m, a) => {
-    const r = await fetch(`${url}/jsonrpc`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { service, method: m, args: a } }) }).then(r => r.json());
+    const r = await payrollPlatform.request(`${url}/jsonrpc`, { method: 'POST', credentials: 'omit', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', method: 'call', params: { service, method: m, args: a } }) }).then(r => r.json());
     if (r.error) throw new Error((r.error.data && r.error.data.message) || r.error.message);
     return r.result;
   };
@@ -661,7 +662,7 @@ function renderSettings() {
   });
 }
 $('#testConn').onclick = async () => {
-  try { const o = new URL($('#odooUrl').value.trim()).origin; if (!o.endsWith('.odoo.com')) { const ok = await chrome.permissions.request({ origins: [o + '/*'] }); if (!ok) return $('#connMsg').innerHTML = '<span class="bad">Chrome permission for this server was not granted.</span>'; } } catch (_) { return $('#connMsg').innerHTML = '<span class="bad">Enter a valid Odoo URL, e.g. https://erp.example.com</span>'; }
+  try { const o = new URL($('#odooUrl').value.trim()).origin; if (!o.endsWith('.odoo.com')) { const ok = await payrollPlatform.permissions.request({ origins: [o + '/*'] }); if (!ok) return $('#connMsg').innerHTML = '<span class="bad">Chrome permission for this server was not granted.</span>'; } } catch (_) { return $('#connMsg').innerHTML = '<span class="bad">Enter a valid Odoo URL, e.g. https://erp.example.com</span>'; }
   S.settings.url = $('#odooUrl').value.trim(); S.settings.mode = $('#connMode').value; S.settings.db = $('#odooDb').value.trim(); S.settings.login = $('#odooLogin').value.trim(); S.settings.key = $('#odooKey').value.trim(); rpcUid = null; useRpc = false; const msg = $('#connMsg');
   try {
     await save();
@@ -690,7 +691,7 @@ $('#importFile').onchange = async ev => {
 };
 
 async function init() { await load(); S.posted = S.posted || {}; renderEmployees(); fillEmp(null); renderStructures(); fillStructure(S.structures[0]); renderSettings(); }
-init();
+init().catch(e => { $('#connMsg').textContent = 'Cannot load payroll data: ' + e.message; $('#testConn').disabled = true; });
 
 // ---------- Searchable dropdowns ----------
 // Adds a search box to every dropdown with more than 6 options (accounts, employees, journals, structures...).

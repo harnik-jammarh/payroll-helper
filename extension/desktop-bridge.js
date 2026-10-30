@@ -15,11 +15,12 @@ async function desktopCall(path, value) {
   return response.json();
 }
 let storageQueue = Promise.resolve();
-window.chrome = {
+window.payrollDesktop = {
   storage: {local: {
     get: async () => { await storageQueue; return desktopCall('storage'); },
     set: value => {
-      const next=storageQueue.then(()=>desktopCall('storage',value));
+      const snapshot=JSON.parse(JSON.stringify(value));
+      const next=storageQueue.then(()=>desktopCall('storage',snapshot));
       storageQueue=next.catch(()=>{});
       next.catch(e=>alert('Payroll data could not be saved: '+e.message));
       return next;
@@ -32,7 +33,7 @@ window.chrome = {
   }},
   scripting: {executeScript:async ({target,args})=>[{result:await companionCall({kind:'rpc',origin:target.tabId,args})}]}
 };
-window.fetch = (input, options={}) => {
+window.payrollDesktop.request = (input, options={}) => {
   const url=new URL(input,location.href);
   if(url.origin===location.origin) return browserFetch(input,options);
   return browserFetch(new URL('proxy',desktopBase),{
