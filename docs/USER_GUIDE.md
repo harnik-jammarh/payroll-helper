@@ -9,7 +9,7 @@ Close the previous app, then run from the downloaded file's directory:
 Each launch asks you to choose Brave, Firefox, Chrome or Chromium. Unavailable
 browsers are disabled. Install your preferred browser separately. The package
 installs Python 3 and Tk through apt. No extension installation is required.
-Keep the small running-status window open while using payroll in the browser.
+Closing the small running-status window minimizes it; the service stays running.
 Stop application shuts down the local service; close its browser tabs afterwards.
 Launching again allows selecting another browser and reuses the running service.
 

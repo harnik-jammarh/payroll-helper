@@ -3,9 +3,14 @@ const desktopBase = new URL('.', location.href);
 const desktopToken = desktopBase.pathname.split('/')[1];
 const browserFetch = window.fetch.bind(window);
 async function desktopCall(path, value) {
-  const response = await browserFetch(new URL(path, desktopBase), value === undefined ? {} : {
-    method: 'POST', headers: {'Content-Type':'application/json','X-Payroll-Token':desktopToken}, body:JSON.stringify(value)
-  });
+  let response;
+  try {
+    response = await browserFetch(new URL(path, desktopBase), value === undefined ? {} : {
+      method: 'POST', headers: {'Content-Type':'application/json','X-Payroll-Token':desktopToken}, body:JSON.stringify(value)
+    });
+  } catch (_) {
+    throw new Error('Cannot reach the local Payroll Helper service. Launch odoo-payroll-helper again, choose your browser, and use the newly opened payroll tab. If the service is running, check whether this browser is blocking requests to 127.0.0.1.');
+  }
   if (!response.ok) { const err=await response.json(); throw new Error(err.error || err.message || 'Local storage failed'); }
   return response.json();
 }

@@ -19,7 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: python3 tests/desktop.py && node tests/companion.cjs && python3 tests/packaging.py && python3 tests/installer.py
+      - run: python3 tests/desktop.py && node tests/companion.cjs && node tests/desktop-bridge.cjs && python3 tests/packaging.py && python3 tests/installer.py
       - name: Prepare persistent Chromium signing key
         env:
           SIGNING_KEY: ${{ secrets.CRX_PRIVATE_KEY }}

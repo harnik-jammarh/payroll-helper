@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: '22'
       - run: python3 tests/desktop.py
-      - run: node tests/companion.cjs
+      - run: node tests/companion.cjs && node tests/desktop-bridge.cjs
       - run: python3 tests/packaging.py && python3 tests/installer.py
       - run: bash -n install.sh
       - run: python3 build.py 1.3.0 dist

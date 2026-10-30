@@ -662,8 +662,10 @@ function renderSettings() {
 }
 $('#testConn').onclick = async () => {
   try { const o = new URL($('#odooUrl').value.trim()).origin; if (!o.endsWith('.odoo.com')) { const ok = await chrome.permissions.request({ origins: [o + '/*'] }); if (!ok) return $('#connMsg').innerHTML = '<span class="bad">Chrome permission for this server was not granted.</span>'; } } catch (_) { return $('#connMsg').innerHTML = '<span class="bad">Enter a valid Odoo URL, e.g. https://erp.example.com</span>'; }
-  S.settings.url = $('#odooUrl').value.trim(); S.settings.mode = $('#connMode').value; S.settings.db = $('#odooDb').value.trim(); S.settings.login = $('#odooLogin').value.trim(); S.settings.key = $('#odooKey').value.trim(); rpcUid = null; useRpc = false; await save(); const msg = $('#connMsg'); msg.textContent = 'Connecting…';
+  S.settings.url = $('#odooUrl').value.trim(); S.settings.mode = $('#connMode').value; S.settings.db = $('#odooDb').value.trim(); S.settings.login = $('#odooLogin').value.trim(); S.settings.key = $('#odooKey').value.trim(); rpcUid = null; useRpc = false; const msg = $('#connMsg');
   try {
+    await save();
+    msg.textContent = 'Connecting…';
     S.cache.journals = await odoo('account.journal', 'search_read', [[['type', '=', 'general']], ['name', 'code']]);
     await loadChart();
     try { [S.cache.company] = await odoo('res.company', 'search_read', [[], ['name', 'street', 'city', 'zip', 'currency_id']], { limit: 1 }); } catch (_) {}

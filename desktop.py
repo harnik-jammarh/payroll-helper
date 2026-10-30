@@ -115,10 +115,10 @@ def main():
             server.shutdown();lock.close();return messagebox.showerror('Open browser',str(e))
         root._lock=lock;root._server=server
         for child in root.winfo_children(): child.destroy()
-        tk.Label(root,text='Payroll Helper is running in your browser.\nKeep this window open while using it.').pack(padx=25,pady=20)
+        tk.Label(root,text='Payroll Helper is running in your browser.\nClosing this window minimizes it. Use Stop to quit.').pack(padx=25,pady=20)
         tk.Button(root,text='Reopen browser',command=lambda:subprocess.Popen([commands[selected.get()],url])).pack(pady=5)
         def stop(): server.shutdown();server.server_close();lock.close();root.destroy()
-        tk.Button(root,text='Stop application',command=stop).pack(pady=(5,20));root.protocol('WM_DELETE_WINDOW',stop)
+        tk.Button(root,text='Stop application',command=stop).pack(pady=(5,20));root.protocol('WM_DELETE_WINDOW',root.iconify)
     tk.Button(root,text='Open Payroll Helper',command=launch).pack(padx=30,pady=20)
     root.mainloop()
 if __name__=='__main__': main()

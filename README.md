@@ -65,7 +65,8 @@ Firefox compatibility and automatic deployment require testing on Ubuntu's Snap.
 The app uses atomic saves and user-only file permissions. Package installation,
 upgrades and removal never delete user payroll files. Old extension profiles are
 left untouched; import a JSON backup to migrate from the original extension.
-Keep the small application status window open while using the browser page.
+Closing the small status window minimizes it and keeps the service running. Use
+Stop application to shut down the local service, then close old payroll tabs.
 
 ## Build releases
 
