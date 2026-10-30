@@ -46,6 +46,13 @@ def handler(store, token):
         def do_GET(self):
             route=self.route()
             try:
+                if route=='companion-handshake':
+                    if self.headers.get('X-Payroll-Token') != token:
+                        return self.respond(403,{'error':'Forbidden'})
+                    settings=store.read().get('payroll',{}).get('settings',{})
+                    target=urlsplit(settings.get('url',''))
+                    origin=(target.scheme+'://'+target.netloc) if target.scheme=='https' else None
+                    return self.respond(200,{'app':'odoo-payroll-helper','protocol':1,'mode':settings.get('mode'),'odoo_origin':origin})
                 if route=='storage': return self.respond(200,store.read())
                 types={'app.html':'text/html; charset=utf-8','app.css':'text/css','app.js':'text/javascript','desktop-bridge.js':'text/javascript'}
                 if route in types: return self.respond(200,(ASSETS/route).read_bytes(),types[route])

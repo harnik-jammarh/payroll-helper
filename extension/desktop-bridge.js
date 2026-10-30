@@ -44,7 +44,7 @@ window.fetch = (input, options={}) => {
 function companionCall(request) {
   return new Promise((resolve,reject)=>{
     const id=crypto.randomUUID();
-    const timer=setTimeout(()=>{window.removeEventListener('message',receive);reject(new Error('No companion response. Install Payroll Tab Companion in this browser, reload this page, and click its toolbar icon on this payroll tab.'));},request.kind==='rpc'?70000:3000);
+    const timer=setTimeout(()=>{window.removeEventListener('message',receive);reject(new Error('No companion response. Update or enable Payroll Tab Companion in this browser, then reload this page.'));},request.kind==='rpc'?70000:3000);
     function receive(event) {
       if(event.source!==window || event.origin!==location.origin || typeof event.data!=='string') return;
       let message;try{message=JSON.parse(event.data);}catch(_){return;}

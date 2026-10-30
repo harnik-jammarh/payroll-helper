@@ -44,9 +44,8 @@ installation. Full deployment builds use `scripts/release.py`, described below.
 ## Browsers and logged-in tabs
 API-key mode works without a browser companion. Logged-in-tab mode requires the
 companion in the **same browser and profile** as Odoo. The app finds matching tabs
-by the HTTPS Odoo URL and prefers an active matching tab. Click the companion
-icon on the payroll page to approve access to that page, then choose logged-in-tab
-mode and Connect. Site session cookies are used inside Odoo and are not copied.
+by the HTTPS Odoo URL and prefers an active matching tab. Choose logged-in-tab mode and click Connect. The companion verifies the local
+payroll session and saved Odoo origin automatically; no toolbar click is required. Site session cookies are used inside Odoo and are not copied.
 
 Deployment builds automatically configure the companion for native Chrome and
 Brave using Linux browser policies. A signed Firefox XPI enables equivalent

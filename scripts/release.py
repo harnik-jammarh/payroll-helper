@@ -12,7 +12,7 @@ base=('https://github.com/harnik-jammarh/payroll-helper/releases/download/v'+a.v
 extid=pack(ROOT/'companion',a.key,out/'payroll-tab-companion.crx',base+'companion-updates.xml',a.version)
 (out/'companion-updates.xml').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0"><app appid="{extid}"><updatecheck codebase="{base}payroll-tab-companion.crx" version="{a.version}" /></app></gupdate>\n''')
-config={'chromium_id':extid,'chromium_update_url':base+'companion-updates.xml','firefox_id':'payroll-tab-companion@local.odoo-helper','firefox_install_url':None}
+config={'companion_version':a.version,'chromium_id':extid,'chromium_update_url':base+'companion-updates.xml','firefox_id':'payroll-tab-companion@local.odoo-helper','firefox_install_url':None}
 if a.firefox_xpi_url:
     if not a.firefox_xpi_url.startswith('https://'):p.error('Firefox download must use HTTPS')
     with urllib.request.urlopen(a.firefox_xpi_url,timeout=120) as response:blob=response.read(20*1024*1024+1)

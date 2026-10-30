@@ -23,6 +23,8 @@ with tempfile.TemporaryDirectory() as tmp:
  assert len(json.loads((Path(tmp)/'payroll.previous.json').read_text())['payroll']['employees'])==1
  assert (Path(tmp)/'payroll.json').stat().st_mode & 0o777==0o600
  assert request('GET','../desktop.py')[0]==404
+ assert request('GET','companion-handshake',auth=False)[0]==403
+ assert json.loads(request('GET','companion-handshake')[1])['app']=='odoo-payroll-helper'
  assert request('GET','app.html')[0]==200
  assert b'desktop-bridge.js' in request('GET','app.html')[1]
  class Response:

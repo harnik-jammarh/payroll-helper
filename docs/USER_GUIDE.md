@@ -53,11 +53,10 @@ which is not included in these artifacts.
 ### Enable logged-in-tab access
 1. Open and log in to your HTTPS Odoo site in the selected browser/profile.
 2. Open the local payroll app and reload its page after installing the companion.
-3. While on the payroll app tab, click the companion toolbar icon (badge: ON).
+3. The companion verifies the local Payroll Helper session automatically.
 4. Select My logged-in Odoo tab, enter the Odoo URL, and click Connect.
 
-Approval is specific to that payroll page URL and tab. Repeat the toolbar click
-after opening a new payroll tab or restarting the desktop app. The extension uses
+Verification is specific to the local session URL and the saved Odoo origin. The extension uses
 your existing Odoo session; it does not copy cookies or require an API key. Other
 browser profiles and private/incognito tabs are separate sessions. Normal Odoo
 user permissions still apply, including payroll journal operations.

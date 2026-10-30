@@ -1,22 +1,26 @@
 const api = typeof browser !== 'undefined' ? browser : chrome;
 function appURL(value) {
-  try { const u=new URL(value); return u.protocol==='http:' && u.hostname==='127.0.0.1' && /^\/[A-Za-z0-9_-]{40,}\/app\.html$/.test(u.pathname); } catch (_) { return false; }
+  try { const u=new URL(value); return u.protocol==='http:' && u.hostname==='127.0.0.1' && !u.username && !u.password && !u.search && !u.hash && /^\/[A-Za-z0-9_-]{40,}\/app\.html$/.test(u.pathname); } catch (_) { return false; }
 }
-api.action.onClicked.addListener(async tab => {
-  if (!appURL(tab.url)) return;
-  await api.storage.local.set({['approved-'+tab.id]:tab.url});
-  await api.action.setBadgeText({tabId:tab.id,text:'ON'});
-  await api.action.setBadgeBackgroundColor({tabId:tab.id,color:'#017e84'});
-});
+async function verifyPayrollPage(url, origin) {
+  const target=new URL('companion-handshake',url);
+  let response;
+  try {
+    response=await fetch(target.href,{headers:{'X-Payroll-Token':new URL(url).pathname.split('/')[1]},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000)});
+  } catch (_) { throw new Error('Cannot verify the local payroll app. Restart Payroll Helper and use its newly opened tab.'); }
+  if(!response.ok) throw new Error('Update and restart Payroll Helper to enable automatic logged-in-tab access.');
+  const info=await response.json();
+  if(info.app!=='odoo-payroll-helper' || info.protocol!==1 || info.mode!=='tab' || (origin && info.odoo_origin!==origin))
+    throw new Error('Save the Odoo URL in logged-in-tab mode using Connect before accessing Odoo.');
+}
 api.runtime.onMessage.addListener((message,sender,respond)=>{
   (async()=>{
     if(!sender.tab || !appURL(sender.url)) throw new Error('Open the desktop payroll application first.');
-    const key='approved-'+sender.tab.id;
-    const approved=await api.storage.local.get(key);
-    if(approved[key]!==sender.url) throw new Error('Click the Payroll Tab Companion toolbar icon on this payroll tab to enable logged-in-tab access.');
+    if(sender.frameId && sender.frameId!==0) throw new Error('Open Payroll Helper in a normal browser tab.');
+    const origin=message.kind==='ping' ? null : new URL(message.origin).origin;
+    if(origin && !origin.startsWith('https://')) throw new Error('Use an HTTPS Odoo URL.');
+    await verifyPayrollPage(sender.url,origin);
     if(message.kind==='ping') return {ready:true};
-    const origin=new URL(message.origin).origin;
-    if(!origin.startsWith('https://')) throw new Error('Use an HTTPS Odoo URL.');
     const tabs=(await api.tabs.query({url:origin+'/*'})).sort((a,b)=>Number(b.active)-Number(a.active));
     if(!tabs.length) throw new Error('Open and log in to '+origin+' in this browser and profile, then retry.');
     if(message.kind==='find') return {found:true};
