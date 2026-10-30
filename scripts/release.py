@@ -4,11 +4,11 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 from crx3 import pack
 ROOT=Path(__file__).resolve().parents[1]
-p=argparse.ArgumentParser();p.add_argument('version');p.add_argument('--key',type=Path,required=True);p.add_argument('--firefox-xpi-url');p.add_argument('--require-companions',action='store_true');a=p.parse_args()
+p=argparse.ArgumentParser();p.add_argument('version');p.add_argument('--key',type=Path,required=True);p.add_argument('--firefox-xpi-url');p.add_argument('--require-companions',action='store_true');p.add_argument('--preview',action='store_true');a=p.parse_args()
 if not re.fullmatch(r'\d+\.\d+\.\d+',a.version):p.error('Use X.Y.Z')
 if a.require_companions and not a.firefox_xpi_url:p.error('A Mozilla-signed Firefox XPI URL is required for automatic companion deployment')
 out=ROOT/'dist';out.mkdir(exist_ok=True)
-base='https://github.com/harnik-jammarh/payroll-helper/releases/latest/download/'
+base=('https://github.com/harnik-jammarh/payroll-helper/releases/download/v'+a.version+'/' if a.preview else 'https://github.com/harnik-jammarh/payroll-helper/releases/latest/download/')
 extid=pack(ROOT/'companion',a.key,out/'payroll-tab-companion.crx',base+'companion-updates.xml',a.version)
 (out/'companion-updates.xml').write_text(f'''<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0"><app appid="{extid}"><updatecheck codebase="{base}payroll-tab-companion.crx" version="{a.version}" /></app></gupdate>\n''')

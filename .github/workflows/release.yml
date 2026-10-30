@@ -36,7 +36,7 @@ jobs:
         run: |
           args=()
           if [ -n "$FIREFOX_XPI_URL" ]; then args+=(--firefox-xpi-url "$FIREFOX_XPI_URL"); fi
-          if [ "$REQUIRE_ALL" = true ]; then args+=(--require-companions); fi
+          if [ "$REQUIRE_ALL" = true ]; then args+=(--require-companions); else args+=(--preview); fi
           python3 scripts/release.py "$VERSION" --key .private/chromium.pem "${args[@]}"
       - name: Publish release
         env:

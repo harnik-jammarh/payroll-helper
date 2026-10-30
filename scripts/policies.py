@@ -35,7 +35,7 @@ def configure(root,config=None):
         entries.append({'file':relative,'keys':keys,'existed':key in parent,'old':parent.get(key),'installed':value})
         parent[key]=value
     if config:
-        chromium={'installation_mode':'force_installed','update_url':config['chromium_update_url']}
+        chromium={'installation_mode':'force_installed','update_url':config['chromium_update_url'],'override_update_url':True}
         for path in ['etc/opt/chrome/policies/managed/odoo-payroll-helper.json','etc/brave/policies/managed/odoo-payroll-helper.json']:
             install(path,['ExtensionSettings',config['chromium_id']],chromium)
         if config.get('firefox_install_url'):
