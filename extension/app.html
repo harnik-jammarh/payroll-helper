@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odoo Payroll Helper</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>Odoo Payroll Helper</h1>
+  <nav>
+    <button data-tab="settings" class="active">1. Odoo connection</button>
+    <button data-tab="employees">2. Employees</button>
+    <button data-tab="structures">3. Pay structures</button>
+    <button data-tab="run">4. Run salary (per employee)</button>
+    <button data-tab="payroll">5. All employees</button>
+    <button data-tab="accounting">6. Accounting (optional)</button>
+    <button data-tab="history">7. History</button>
+  </nav>
+</header>
+
+<main>
+<!-- SETTINGS -->
+<section id="settings" class="tab active">
+  <div class="card">
+    <h2>Odoo connection</h2><p class="hint">For logged-in-tab mode: install Payroll Tab Companion in this browser, reload this page, then click the companion toolbar icon here to enable access. Keep Odoo logged in in the same browser and profile. No API key is needed.</p>
+    <p class="hint"><b>API key:</b> in Odoo open your avatar → My Profile → Security → <b>New API Key</b>, copy it here. The key has the same rights as that user and is stored only in your local application data. </p>
+    <div class="grid">
+      <label>Odoo URL<input id="odooUrl" placeholder="https://yourcompany.odoo.com or https://erp.yourdomain.com"></label>
+      <label>Connect using<select id="connMode"><option value="api">API key (no Odoo tab needed)</option><option value="tab">My logged-in Odoo tab (companion required)</option></select></label>
+      <label class="api">Database name (optional)<input id="odooDb" placeholder="auto-detected"></label>
+      <label class="api">Login (only for Odoo 17/18)<input id="odooLogin" placeholder="email of the API key owner"></label>
+      <label class="api">API key<input id="odooKey" type="password" placeholder="Odoo → My Profile → Security → New API Key"></label>
+    </div>
+    <div class="actions"><button id="testConn" class="primary">Connect &amp; load accounts</button></div>
+    <p id="connMsg" class="hint"></p>
+  </div>
+
+  <div class="card">
+    <h2>Backup</h2>
+    <p class="hint">Data is stored only in your local application data. Export a backup regularly.</p>
+    <div class="actions">
+      <button id="exportBtn">Export backup (JSON)</button>
+      <label class="filebtn">Import backup<input type="file" id="importFile" accept=".json" hidden></label>
+    </div>
+  </div>
+</section>
+
+<!-- EMPLOYEES -->
+<section id="employees" class="tab">
+  <div class="card">
+    <h2 id="empFormTitle">New employee</h2>
+    <form id="empForm">
+      <input type="hidden" name="id">
+      <div class="grid">
+        <label>Employee code<input name="code" required></label>
+        <label>Full name<input name="name" required></label>
+        <label>Phone<input name="phone"></label>
+        <label>Email<input name="email" type="email"></label>
+        <label>Joining date<input name="joining" type="date"></label>
+        <label>Tax ID (PAN / SSN / NIF…)<input name="pan"></label>
+        <label>Social security / PF no.<input name="uan"></label>
+        <label>Health insurance / ESI no.<input name="esi"></label>
+        <label>Bank account no.<input name="bank"></label>
+        <label>Bank code (IFSC / SWIFT / IBAN)<input name="ifsc"></label>
+        <label>Pay structure<select name="structure" required></select></label>
+        <label>Monthly gross salary<input name="gross" type="number" min="0" step="1" required></label>
+      </div>
+      <p class="hint" id="empPreview"></p>
+      <label class="check"><input type="checkbox" name="toOdoo" checked> Also create / update this person as a Contact in Odoo (needed for posting)</label>
+      <div class="actions">
+        <button type="submit" class="primary">Save employee</button>
+        <button type="button" id="empReset">Clear</button>
+      </div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Employees</h2>
+    <table id="empTable"><thead><tr><th>Code</th><th>Name</th><th>Structure</th><th class="num">Gross</th><th>Odoo contact</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- STRUCTURES -->
+<section id="structures" class="tab">
+  <div class="card">
+    <h2 id="stFormTitle">Pay structure</h2>
+    <p class="hint">Components are calculated top to bottom on the <b>prorated gross</b> (gross × paid days ÷ month days). "Balance" takes whatever gross is left after the other earnings.</p>
+    <div class="actions" style="margin:0 0 12px">
+      <select id="odooStructs"><option value="">— Odoo Payroll structures —</option></select>
+      <button type="button" id="loadStructs">Load from Odoo</button>
+      <button type="button" id="importStruct" class="primary">Import selected structure</button>
+    </div>
+    <p id="importMsg" class="hint"></p>
+    <form id="stForm">
+      <input type="hidden" name="id">
+      <label>Structure name<input name="name" required></label>
+      <table id="compTable">
+        <thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Calculation</th><th>Value</th><th>Max amount</th><th>Only if gross ≤</th><th>Account role</th><th>Odoo account (optional)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="actions">
+        <button type="button" id="addComp">+ Component</button>
+        <button type="submit" class="primary">Save structure</button>
+        <button type="button" id="stReset">New</button>
+      </div>
+    </form>
+  </div>
+  <div class="card">
+    <h2>Structures</h2>
+    <table id="stTable"><thead><tr><th>Name</th><th>Components</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- RUN SALARY -->
+<section id="run" class="tab">
+  <div class="card">
+    <h2>Step 1 – Employee</h2>
+    <div class="grid"><label>Employee<select id="wzEmp"></select></label></div>
+  </div>
+  <div class="card wz-step" hidden>
+    <h2>Step 2 – Pay structure &amp; salary</h2>
+    <p class="hint">Pick this employee's structure and change any value just for them (for example a different HRA % or a fixed allowance). Values that differ from the structure are saved only for this employee.</p>
+    <div class="grid">
+      <label>Pay structure<select id="wzStruct"></select></label>
+      <label>Monthly gross salary<input id="wzGross" type="number" min="0"></label>
+    </div>
+    <table id="wzCompTable"><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>Calculation</th><th>Value</th><th>Source</th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="wzSave">Save for this employee</button></div><p id="wzSaveMsg" class="hint"></p>
+  </div>
+  <div class="card wz-step" hidden>
+    <h2>Step 3 – Attendance</h2>
+    <div class="grid">
+      <label>Month<input type="month" id="wzMonth"></label>
+      <label>Days in month<input type="number" id="wzDays" min="1" max="31"></label>
+      <label>Paid days<input type="number" id="wzPaid" min="0" max="31" step="0.5"></label>
+    </div>
+    <div id="wzSalary"></div>
+  </div>
+  <div class="card wz-step" hidden>
+    <h2>Step 4 – Accounting entry</h2>
+    <div id="wzAcc" class="scroll"></div>
+    <div class="actions">
+      <button id="wzPrint">🖨 Print payslip</button>
+      <button id="wzPost" class="primary">Post to Odoo</button>
+    </div>
+    <p id="wzPostMsg" class="hint"></p>
+  </div>
+</section>
+
+<!-- PAYROLL -->
+<section id="payroll" class="tab">
+  <div class="card">
+    <h2>Attendance</h2>
+    <div class="grid">
+      <label>Month<input type="month" id="runMonth"></label>
+      <label>Days in month<input type="number" id="runDays" min="1" max="31"></label>
+    </div>
+    <table id="attTable"><thead><tr><th>Code</th><th>Name</th><th>Structure</th><th class="num">Gross</th><th>Paid days</th></tr></thead><tbody></tbody></table>
+    <div class="actions"><button id="calcBtn" class="primary">Calculate salary</button></div>
+  </div>
+  <div class="card" id="resultCard" hidden>
+    <h2>Salary sheet</h2>
+    <div class="scroll"><table id="resTable"></table></div>
+    <div class="actions">
+      <button id="slipsBtn">🖨 Print all payslips</button>
+      <button id="csvBtn">Download CSV</button>
+      <button id="postBtn" class="primary">Post ONE entry for all employees</button>
+      <button id="postEachBtn">Post separate entry per employee</button>
+    </div>
+    <p id="postMsg" class="hint"></p>
+  </div>
+</section>
+
+
+<!-- HISTORY -->
+<section id="history" class="tab">
+  <div class="card">
+    <h2>Previous months</h2>
+    <p class="hint">Every month you calculate or post is saved here with each employee's paid days, salary split and Odoo entry.</p>
+    <div class="grid"><label>Month<select id="histMonth"></select></label></div>
+    <p id="histSummary"></p>
+    <div class="scroll"><table id="histTable"><thead><tr><th>Code</th><th>Name</th><th>Structure</th><th class="num">Days</th><th class="num">Earnings</th><th class="num">Deductions</th><th class="num">Net</th><th>Odoo entry</th><th></th></tr></thead><tbody></tbody></table></div>
+    <div class="actions">
+      <button id="histPrintAll">🖨 Print all payslips of this month</button>
+      <button id="histCsv">Download CSV</button>
+      <button id="histReopen">Open this month in 5. All employees</button>
+    </div>
+  </div>
+</section>
+
+<!-- ACCOUNTING -->
+<section id="accounting" class="tab">
+  <div class="card">
+    <h2>Accounting</h2>
+    <p class="hint">Posting follows Odoo Payroll: each earning <b>debits</b> its expense account, each deduction <b>credits</b> its payable account, and net pay is <b>credited to Salaries payable</b> with the employee as partner. Entry date = last day of the month; journal = the structure's journal from Odoo (e.g. Salaries) unless you pick one here. Accounts imported from Odoo rules are used first; the accounts below are only fallbacks.</p>
+    <div class="grid">
+      <label>Journal (empty = structure's journal)<select id="journal"></select></label>
+      <label>"Post all" creates<select id="postMode"><option value="batch">One entry for all employees (like a payslip batch)</option><option value="each">One entry per employee</option></select></label>
+      <label>Lines in a combined entry<select id="groupLines"><option value="0">One line per employee and rule (default in Odoo)</option><option value="1">Grouped per account, no partner (Odoo "Batch Account Move Lines")</option></select></label>
+      <label>Post automatically<select id="autoPost"><option value="0">No, leave as draft</option><option value="1">Yes, post the entry</option></select></label>
+      <label>Earnings → Salary expense<select data-role="expense"></select></label>
+      <label>Net pay → Salaries payable<select data-role="payable"></select></label>
+      <label>Social security / pension payable<select data-role="pf"></select></label>
+      <label>Health insurance payable<select data-role="esi"></select></label>
+      <label>Local / professional tax payable<select data-role="pt"></select></label>
+      <label>Income tax withheld payable<select data-role="tds"></select></label>
+      <label>Other deductions<select data-role="other"></select></label>
+      <label>Employer contribution expense<select data-role="employer_exp"></select></label>
+    </div>
+    <div class="actions"><button id="saveAcc" class="primary">Save accounting settings</button></div>
+  </div>
+</section>
+</main>
+<script src="desktop-bridge.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

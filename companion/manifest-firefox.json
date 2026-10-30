@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Payroll Tab Companion",
+  "version": "1.2.0",
+  "description": "Connect the local Payroll Helper app to your logged-in Odoo tab.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*/*"
+  ],
+  "action": {
+    "default_title": "Enable Payroll Tab Companion on this payroll tab"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "background": {
+    "scripts": [
+      "background.js"
+    ]
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "payroll-tab-companion@local.odoo-helper",
+      "strict_min_version": "128.0"
+    }
+  }
+}

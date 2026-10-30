@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Odoo Payroll Helper",
+  "version": "1.0.0",
+  "description": "Create workers, pay structures and attendance, calculate salary, and post the salary journal entry to Odoo.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.odoo.com/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
+  "action": {
+    "default_title": "Odoo Payroll Helper"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4fIFFkoWdPn0UIXbn/UMFmvLfFT3cD73GrjK+jB8ofAFBagf6ad6xHVWDuxBekUFAwwkDFcmWWMbD4FP/G2gRUcdSQ0Pa2jGz56ynyd36hbwq5Ugj7pDUe0OzLwnXjN5F5zQhNYLHvGN4Cxu73uCx53bLeGX44PV3yzPXw7J6IGKcvlm8Tx+2RaZPxoAbxvssy+I+FQNJBnrwobKCD+qikJKkZyjbmBGAQjgUeol94BnoWaDw7Hi6NHBH+xuJVjcEkAP3DGCSG/Um50gv3aAHjVf49Lf+d2p/jhoegK5HJctYgU8Uh9cf7I5dfXH7ffD+lVFzNZGS0cqRgNePiyZVQIDAQAB"
+}
